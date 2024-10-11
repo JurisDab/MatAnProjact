@@ -20,6 +20,11 @@ def f(z, c):
 def f_defin(z):
     return 3*z**2 - 2
 
+def newton_transform(z, c):
+    f_z = f(z, c)
+    f_defin_z = f_defin(z)
+    return z - f_z / f_defin_z
+
 def newtons_method(c, initial_guess=0.0, tolerance=0.000001, max_iterations=1000):
     z = initial_guess
     for _ in range(max_iterations):
@@ -54,6 +59,22 @@ def julia_set(c, xlim=(-2, 2), ylim=(-2, 2), width=400, height=400, max_iter=50)
 
     return img
 
+def julia_set_newton(c, xlim=(-2, 2), ylim=(-2, 2), width=400, height=400, max_iter=50):
+    x = np.linspace(xlim[0], xlim[1], width)
+    y = np.linspace(ylim[0], ylim[1], height)
+    
+    Z = x[:, None] + 1j * y[None, :]
+    img = np.zeros(Z.shape, dtype=int)
+
+    mask = np.ones(Z.shape, dtype=bool)
+    
+    for i in range(max_iter):
+        Z[mask] = newton_transform(Z[mask], c)
+        mask = mask & (np.abs(Z) < 2)
+        img[mask] = i
+
+    return img
+
 def update_plot(val):
     real_part = real_slider.val
     imag_part = imag_slider.val
@@ -65,6 +86,11 @@ def update_plot(val):
         julia_ax.clear()
         julia_ax.imshow(julia_img, extent=(-2, 2, -2, 2), cmap='twilight', origin='lower')
         julia_ax.set_title(f'Julia Set for c = {c}')
+        
+        newton_julia_img = julia_set_newton(c)
+        newton_julia_ax.clear()
+        newton_julia_ax.imshow(newton_julia_img, extent=(-2, 2, -2, 2), cmap='twilight', origin='lower')
+        newton_julia_ax.set_title(f'Newton Julia Set for c = {c}')
 
         real_zeros.clear()
         complex_zeros.clear()
@@ -82,6 +108,8 @@ def update_plot(val):
         all_zeros = list(real_zeros) + list(complex_zeros)
         newton_ax.scatter([z.real for z in all_zeros], [z.imag for z in all_zeros], c='red')
         
+        newton_julia_ax.scatter([z.real for z in all_zeros], [z.imag for z in all_zeros], c='red', edgecolors='black', s=100, label='Zeros')
+
         newton_ax.set(xlim=(-5, 5), ylim=(-5, 5), aspect='equal')
         newton_ax.spines['bottom'].set_position('zero')
         newton_ax.spines['left'].set_position('zero')
@@ -93,25 +121,27 @@ def update_plot(val):
         newton_ax.legend(['Zeros'])
 
         plt.draw()
+
         
 update_plot.last_c = complex(0, 0)
 
 def main():
-    global real_slider, imag_slider, julia_ax, newton_ax, real_zeros, complex_zeros, initial_guesses, tolerance
+    global real_slider, imag_slider, julia_ax, newton_julia_ax,newton_ax, real_zeros, complex_zeros, initial_guesses, tolerance
     
     tolerance = 0.000001
     initial_guesses = [0.0, 1.0, -1.0, 2.0, -2.0, 1+1j, -1-1j, 2-1j, -2+1j]  
     real_zeros = set()  
     complex_zeros = set()
 
-    fig, (julia_ax, newton_ax) = plt.subplots(1, 2, figsize=(15, 10))
+    fig, (julia_ax, newton_julia_ax, newton_ax) = plt.subplots(1, 3, figsize=(20, 10))
 
     axcolor = 'lightgoldenrodyellow'
     ax_real = plt.axes([0.2, 0.01, 0.65, 0.03], facecolor=axcolor)
     ax_imag = plt.axes([0.2, 0.05, 0.65, 0.03], facecolor=axcolor)
 
-    real_slider = Slider(ax_real, 'Real (c)', -2.0, 2.0, valinit=0.0)
-    imag_slider = Slider(ax_imag, 'Imaginary (c)', -2.0, 2.0, valinit=0.0)
+    real_slider = Slider(ax_real, 'Real (c)', -5.0, 5.0, valinit=0.0)
+    imag_slider = Slider(ax_imag, 'Imaginary (c)', -5.0, 5.0, valinit=0.0)
+
 
     update_plot(0)
 
