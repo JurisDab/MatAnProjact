@@ -18,10 +18,12 @@ def f(z, c):
     return z**3 - 2*z + c
 
 def f_defin(z):
+    
     return 3*z**2 - 2
 
 def newton_transform(z, c):
     f_z = f(z, c)
+    
     f_defin_z = f_defin(z)
     return z - f_z / f_defin_z
 
@@ -59,7 +61,7 @@ def julia_set(c, xlim=(-2, 2), ylim=(-2, 2), width=400, height=400, max_iter=50)
 
     return img
 
-def julia_set_newton(c, xlim=(-2, 2), ylim=(-2, 2), width=400, height=400, max_iter=50):
+def julia_set_newton(c, roots, xlim=(-2, 2), ylim=(-2, 2), width=400, height=400, max_iter=50):
     x = np.linspace(xlim[0], xlim[1], width)
     y = np.linspace(ylim[0], ylim[1], height)
     
@@ -72,6 +74,10 @@ def julia_set_newton(c, xlim=(-2, 2), ylim=(-2, 2), width=400, height=400, max_i
         Z[mask] = newton_transform(Z[mask], c)
         mask = mask & (np.abs(Z) < 2)
         img[mask] = i
+        
+    for idx, root in enumerate(roots):
+        img[np.abs(Z - root) < 0.01] = idx + 1  
+
 
     return img
 
@@ -87,11 +93,6 @@ def update_plot(val):
         julia_ax.imshow(julia_img, extent=(-2, 2, -2, 2), cmap='twilight', origin='lower')
         julia_ax.set_title(f'Julia Set for c = {c}')
         
-        newton_julia_img = julia_set_newton(c)
-        newton_julia_ax.clear()
-        newton_julia_ax.imshow(newton_julia_img, extent=(-2, 2, -2, 2), cmap='twilight', origin='lower')
-        newton_julia_ax.set_title(f'Newton Julia Set for c = {c}')
-
         real_zeros.clear()
         complex_zeros.clear()
         for guess in initial_guesses:
@@ -104,12 +105,17 @@ def update_plot(val):
                     if not is_near_duplicate(zero, complex_zeros):
                         complex_zeros.add(zero)
 
-        newton_ax.clear()
         all_zeros = list(real_zeros) + list(complex_zeros)
-        newton_ax.scatter([z.real for z in all_zeros], [z.imag for z in all_zeros], c='red')
         
-        newton_julia_ax.scatter([z.real for z in all_zeros], [z.imag for z in all_zeros], c='red', edgecolors='black', s=100, label='Zeros')
+        newton_julia_img = julia_set_newton(c, all_zeros)
+        newton_julia_ax.clear()
+        newton_julia_ax.imshow(newton_julia_img, extent=(-2, 2, -2, 2), cmap='twilight', origin='lower')
+        newton_julia_ax.set_title(f'Newton Julia Set for c = {c}')
 
+        newton_julia_ax.scatter([z.real for z in all_zeros], [z.imag for z in all_zeros], c='red', edgecolors='black', s=100, label='Zeros')
+        
+        newton_ax.clear()
+        newton_ax.scatter([z.real for z in all_zeros], [z.imag for z in all_zeros], c='red')
         newton_ax.set(xlim=(-5, 5), ylim=(-5, 5), aspect='equal')
         newton_ax.spines['bottom'].set_position('zero')
         newton_ax.spines['left'].set_position('zero')
